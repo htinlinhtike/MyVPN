@@ -1,0 +1,26 @@
+.gradle/
+build/
+app/build/
+local.properties
+
+*.apk
+*.aab
+
+*.bak
+*.tmp
+
+.idea/
+*.iml
+
+# Backup / temporary source files
+*.bak*
+*.tmp*
+*.before-*
+*.qr-backup*
+*.working*
+
+# Additional backup files
+*_backup
+*-backup
+
+*.ui-backup*
