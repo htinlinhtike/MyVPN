@@ -73,6 +73,99 @@ public class MainActivity extends Activity {
         buildUI();
         }
 
+    private void checkForUpdate() {
+        Toast.makeText(
+                this,
+                "Checking for updates...",
+                Toast.LENGTH_SHORT
+        ).show();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            HttpURLConnection conn = null;
+
+            try {
+                URL url = new URL(
+                        "https://api.github.com/repos/htinlinhtike/MyVPN/releases/latest"
+                );
+
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(8000);
+                conn.setRequestProperty("Accept", "application/vnd.github+json");
+                conn.setRequestProperty("User-Agent", "MyVPN");
+
+                int code = conn.getResponseCode();
+
+                if (code != HttpURLConnection.HTTP_OK) {
+                    throw new Exception("HTTP " + code);
+                }
+
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        conn.getInputStream(),
+                                        StandardCharsets.UTF_8
+                                )
+                        );
+
+                StringBuilder body = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    body.append(line);
+                }
+
+                reader.close();
+
+                JSONObject json = new JSONObject(body.toString());
+
+                String latestTag =
+                        json.optString("tag_name", "").trim();
+
+                String latestName =
+                        json.optString("name", "").trim();
+
+                runOnUiThread(() -> {
+                    if (latestTag.isEmpty()) {
+                        Toast.makeText(
+                                this,
+                                "No release found",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
+                    }
+
+                    String message =
+                            "Latest version: " +
+                            (latestName.isEmpty()
+                                    ? latestTag
+                                    : latestName);
+
+                    Toast.makeText(
+                            this,
+                            message,
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        Toast.makeText(
+                                this,
+                                "Update check failed: " + e.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
+
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        });
+    }
+
     private LinearLayout root;
     private LinearLayout accountList;
     private TextView accountNameText;
@@ -322,6 +415,33 @@ private final Runnable speedUpdater = new Runnable() {
                 speedCard,
                 speedParams
         );
+
+        // -------------------------
+        // UPDATE
+        // -------------------------
+
+        TextView updateText = new TextView(this);
+
+        updateText.setText("Update");
+        updateText.setTextColor(0xFF1976D2);
+        updateText.setTextSize(14);
+        updateText.setGravity(Gravity.CENTER);
+
+        updateText.setPadding(20, 18, 20, 12);
+
+        updateText.setOnClickListener(v -> checkForUpdate());
+
+        LinearLayout.LayoutParams updateParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+        updateParams.gravity = Gravity.END;
+        updateParams.topMargin = 8;
+        updateParams.rightMargin = 12;
+
+        root.addView(updateText, updateParams);
 
         // -------------------------
         // SHOW UI FIRST
